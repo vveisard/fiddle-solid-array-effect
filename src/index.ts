@@ -20,45 +20,39 @@ const { setState } = createRoot(() => {
     },
   );
 
-
-  createEffect(() => {
-    console.log(`getIds`, entityChunkState.ids)
-  })
-
-  const getEntities = createMemo(mapArray(
+  const getAllEntityIdAndState = createMemo(mapArray(
     () => entityChunkState.ids,
-    (id, index) => () => entityChunkState.entities[id]
+    (id, index) => () => [id, entityChunkState.entities[id]]
+  ))
+
+  const getAllEntityIdAndCounter = createMemo(mapArray(
+    () => entityChunkState.ids,
+    (id, index) => () => [id, entityChunkState.entities[id].counter]
+  ))
+
+  const getAllEntityIdAndColor = createMemo(mapArray(
+    () => entityChunkState.ids,
+    (id, index) => () => [id, entityChunkState.entities[id].color]
   ))
 
   createEffect(() => {
-    console.log(`getEntities`, getEntities().map(i => JSON.stringify(i())))
-  })
-
-  const getCounters = createMemo(mapArray(
-    () => entityChunkState.ids,
-    (id, index) => () => entityChunkState.entities[id].counter
-  ))
-
-  createEffect(() => {
-    console.log(`getCounters`, getCounters().map(i => i()))
+    console.log(`getAllEntityId`, entityChunkState.ids)
   })
 
   createEffect(() => {
-    mapArray(getCounters, (getCounter) => console.log(`getCounter`, getCounter()))
-  })
-
-  const getColors = createMemo(mapArray(
-    () => entityChunkState.ids,
-    (id, index) => () => entityChunkState.entities[id].color
-  ))
-
-  createEffect(() => {
-    console.log(`getColors`, getColors().map(i => i()))
+    console.log(`getAllEntityIdAndState`, getAllEntityIdAndState().map(i => i()))
   })
 
   createEffect(() => {
-    mapArray(getColors, (getColor) => console.log(`getColor`, getColor()))
+    console.log(`getAllEntityIdAndColor`, getAllEntityIdAndColor().map(i => i()))
   })
+
+  createEffect(() => {
+    console.log(`getAllEntityIdAndCounter`, getAllEntityIdAndCounter().map(i => i()))
+  })
+
+  createEffect(mapArray(getAllEntityIdAndCounter, (getEntityAndCounter) => createEffect(() => console.log(`getEntityIdAndCounter`, getEntityAndCounter()))))
+  createEffect(mapArray(getAllEntityIdAndColor, (getEntityAndColor) => createEffect(() => console.log(`getEntityIdAndColor`, getEntityAndColor()))))
 
   return { setState: setEntityChunkState };
 });
@@ -76,7 +70,6 @@ setState(
         },
       },
     },
-    { key: null, merge: true },
   ),
 );
 console.groupEnd()
@@ -96,15 +89,14 @@ setState(
           },
         },
       },
-      { key: "id", merge: true },
     )(prev),
 );
 console.groupEnd()
 
-console.group('counter', 'start')
+console.group('set`, `counter', 'start')
 setState("entities", "b", "counter", 3)
 console.groupEnd()
 
-console.group('color', 'start')
+console.group('set`, `color', 'start')
 setState("entities", "a", "color", "green")
 console.groupEnd()
