@@ -1,5 +1,5 @@
-import { createRoot, createMemo, mapArray } from 'solid-js'
-import { createStore, produce } from 'solid-js/store'
+import { createRoot, createMemo, mapArray, type Accessor, createEffect, onCleanup } from 'solid-js'
+import { createStore, produce, reconcile } from 'solid-js/store'
 
 interface EntityState {
   id: string;
@@ -11,7 +11,7 @@ interface EntityChunkState {
   entities: Record<string, EntityState>
 }
 
-createRoot(() => {
+const { setState } = createRoot(() => {
   const [entityChunkState, setEntityChunkState] = createStore<EntityChunkState>({
     ids: [],
     entities: {
@@ -19,56 +19,62 @@ createRoot(() => {
     }
   })
 
-  const getIds = createMemo(() => entityChunkState.ids);
-  const getEntries = createMemo(() => mapArray(getIds, (id) => [id, entityChunkState.entities[id]]));
-  const getCounters = createMemo(() => mapArray(getIds, (id) => [id, entityChunkState.entities[id].counter]));
-
-  createArrayElementEffect(getIds, (id) => {
-    console.log(id);
-  })
-
-  createArrayElementEffect(getEntries, ([id, entity]) => {
-    console.log(id, entity);
-  })
-
-  createArrayElementEffect(getCounters, ([id, counter]) => {
-    console.log(id, counter);
-  })
-
-  // should output 
-  // - a
-  // - a, { "id": "a", counter: 0 }
-  // - a, 0
-  setTimeout(() => {
-    setEntityChunkState(produce(
-      (prevEntityChunkState) => {
-        prevEntityChunkState.entities["a"] = { id: "a", counter: 0 }
-        prevEntityChunkState.ids.push("a")
+  createEffect(
+    mapArray(
+      mapArray(
+        () => entityChunkState.ids,
+        (id) => () => entityChunkState.entities[id]
+      ),
+      (item, index) => {
+        console.log(`entity`, item())
       }
-    ))
-  }, 1)
+    )
+  );
 
-  // should output:
-  // - b
-  // - b, { "id": "b", counter: 1 }
-  // - b, 1
-  setTimeout(() => {
-    setEntityChunkState(produce(
-      (prevEntityChunkState) => {
-        prevEntityChunkState.entities["b"] = { id: "b", counter: 1 }
-        prevEntityChunkState.ids.push("b")
+  createEffect(
+    mapArray(
+      mapArray(
+        () => entityChunkState.ids,
+        (id) => () => entityChunkState.entities[id].counter
+      ),
+      (item, index) => {
+        console.log(`counter`, item())
       }
-    ))
-  }, 2)
+    )
+  );
 
-  // should output 
-  // - b, { "id": "b", counter: 2 }
-  // - b, 2
-  setTimeout(() => {
-    setEntityChunkState(produce(
-      (prevEntityChunkState) => {
-        prevEntityChunkState.entities["a"].counter = 2
-      }
-    ))
-  }, 3)
+
+  return { setState: setEntityChunkState };
 })
+
+setState(
+  reconcile(
+    {
+      ids: [
+        "a"
+      ],
+      entities: {
+        ["a"]: {
+          id: "a",
+          counter: 1
+        }
+      }
+    },
+    { key: null, merge: true }
+  )
+);
+
+setState((prev) =>
+  reconcile(
+    {
+      ids: prev.ids,
+      entities: {
+        ['a']: {
+          id: "a",
+          counter: 2
+        }
+      }
+    },
+    { key: "id", merge: false }
+  )(prev)
+);
