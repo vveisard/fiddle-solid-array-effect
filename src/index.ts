@@ -1,80 +1,102 @@
-import { createRoot, createMemo, mapArray, type Accessor, createEffect, onCleanup } from 'solid-js'
-import { createStore, produce, reconcile } from 'solid-js/store'
+import { createRoot, mapArray, createEffect, createMemo } from "solid-js";
+import { createStore, reconcile } from "solid-js/store";
 
 interface EntityState {
   id: string;
-  counter: number
+  counter: number;
+  color: string;
 }
 
 interface EntityChunkState {
-  ids: Array<string>
-  entities: Record<string, EntityState>
+  ids: Array<string>;
+  entities: Record<string, EntityState>;
 }
 
 const { setState } = createRoot(() => {
-  const [entityChunkState, setEntityChunkState] = createStore<EntityChunkState>({
-    ids: [],
-    entities: {
+  const [entityChunkState, setEntityChunkState] = createStore<EntityChunkState>(
+    {
+      ids: [],
+      entities: {},
+    },
+  );
 
-    }
+
+  createEffect(() => {
+    console.log(`getIds`, entityChunkState.ids)
   })
 
-  createEffect(
-    mapArray(
-      mapArray(
-        () => entityChunkState.ids,
-        (id) => () => entityChunkState.entities[id]
-      ),
-      (item, index) => {
-        console.log(`entity`, item())
-      }
-    )
-  );
+  const getEntities = createMemo(mapArray(
+    () => entityChunkState.ids,
+    (id, index) => () => entityChunkState.entities[id]
+  ))
 
-  createEffect(
-    mapArray(
-      mapArray(
-        () => entityChunkState.ids,
-        (id) => () => entityChunkState.entities[id].counter
-      ),
-      (item, index) => {
-        console.log(`counter`, item())
-      }
-    )
-  );
+  createEffect(() => {
+    console.log(`getEntities`, getEntities().map(i => JSON.stringify(i())))
+  })
 
+  const getCounters = createMemo(mapArray(
+    () => entityChunkState.ids,
+    (id, index) => () => entityChunkState.entities[id].counter
+  ))
+
+  createEffect(() => {
+    console.log(`getCounters`, getCounters().map(i => JSON.stringify(i())))
+  })
+
+  const getColors = createMemo(mapArray(
+    () => entityChunkState.ids,
+    (id, index) => () => entityChunkState.entities[id].color
+  ))
+
+  createEffect(() => {
+    console.log(`getColors`, getColors().map(i => JSON.stringify(i())))
+  })
 
   return { setState: setEntityChunkState };
-})
+});
 
+console.group('add', 'a', 'start')
 setState(
   reconcile(
     {
-      ids: [
-        "a"
-      ],
+      ids: ["a"],
       entities: {
         ["a"]: {
           id: "a",
-          counter: 1
-        }
-      }
+          counter: 1,
+          color: "red",
+        },
+      },
     },
-    { key: null, merge: true }
-  )
+    { key: null, merge: true },
+  ),
 );
+console.groupEnd()
 
-setState((prev) =>
-  reconcile(
-    {
-      ids: prev.ids,
-      entities: {
-        ['a']: {
-          id: "a",
-          counter: 2
-        }
-      }
-    },
-    { key: "id", merge: false }
-  )(prev)
+console.group('add', 'b', 'start')
+setState(
+  (prev) =>
+    reconcile(
+      {
+        ids: [...prev.ids, "b"],
+        entities: {
+          ...prev.entities,
+          ["b"]: {
+            id: "b",
+            counter: 2,
+            color: "blue"
+          },
+        },
+      },
+      { key: "id", merge: true },
+    )(prev),
 );
+console.groupEnd()
+
+console.group('counter', 'start')
+setState("entities", "b", "counter", 3)
+console.groupEnd()
+
+console.group('color', 'start')
+setState("entities", "a", "color", "green")
+console.groupEnd()

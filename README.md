@@ -1,15 +1,7 @@
-# fiddle-solid-entity-effect
+# Acknowledgements
 
-To install dependencies:
+Thanks to @thetarnav.
 
-```bash
-bun install
-```
+https://playground.solidjs.com/anonymous/83da7ae2-a9cc-404c-a7ac-9fd487368460
 
-To run:
-
-```bash
-bun run ./src/index.ts
-```
-
-This project was created using `bun init` in bun v1.0.20. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+https://github.com/kuskusapp/kuskus/blob/main/src/lib/primitives.ts#L7

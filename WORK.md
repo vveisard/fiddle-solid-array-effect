@@ -1,0 +1,1 @@
+STORY as a developer, I want to see examples of removing entity effects.
