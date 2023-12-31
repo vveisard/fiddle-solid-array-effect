@@ -1,5 +1,5 @@
-import { createRoot, mapArray, createEffect, createMemo } from "solid-js";
-import { createStore, reconcile } from "solid-js/store";
+import { createRoot, mapArray, createEffect, createMemo, onCleanup, onMount } from "solid-js";
+import { createStore, produce, reconcile } from "solid-js/store";
 
 interface EntityState {
   id: string;
@@ -20,23 +20,27 @@ const { setState } = createRoot(() => {
     },
   );
 
+  const getAllEntityIds = createMemo(
+    () => entityChunkState.ids
+  );
+
   const getAllEntityIdAndState = createMemo(
     mapArray(
-      () => entityChunkState.ids,
+      getAllEntityIds,
       (id, index) => () => [id, entityChunkState.entities[id]],
     ),
   );
 
   const getAllEntityIdAndCounter = createMemo(
     mapArray(
-      () => entityChunkState.ids,
+      getAllEntityIds,
       (id, index) => () => [id, entityChunkState.entities[id].counter],
     ),
   );
 
   const getAllEntityIdAndColor = createMemo(
     mapArray(
-      () => entityChunkState.ids,
+      getAllEntityIds,
       (id, index) => () => [id, entityChunkState.entities[id].color],
     ),
   );
@@ -67,17 +71,28 @@ const { setState } = createRoot(() => {
   });
 
   createEffect(
+    mapArray(getAllEntityIds, (getEntityId) =>
+      createEffect(() => {
+        console.log(`getEntityId`, getEntityId);
+        onMount(() => console.log(`getEntityId`, getEntityId, `onMount`));
+        onCleanup(() => console.log(`getEntityId`, getEntityId, `onCleanup`));
+      }),
+    ),
+  );
+
+  createEffect(
     mapArray(getAllEntityIdAndCounter, (getEntityAndCounter) =>
-      createEffect(() =>
-        console.log(`getEntityIdAndCounter`, getEntityAndCounter()),
-      ),
+      createEffect(() => {
+        console.log(`getEntityIdAndCounter`, getEntityAndCounter());
+      }),
     ),
   );
 
   createEffect(
     mapArray(getAllEntityIdAndColor, (getEntityAndColor) =>
-      createEffect(() =>
-        console.log(`getEntityIdAndColor`, getEntityAndColor()),
+      createEffect(() => {
+        console.log(`getEntityIdAndColor`, getEntityAndColor());
+      }
       ),
     ),
   );
@@ -122,4 +137,12 @@ console.groupEnd();
 
 console.group(`set`, `color`, `start`);
 setState(`entities`, `a`, `color`, `green`);
+console.groupEnd();
+
+
+console.group(`remove`, `a`, `start`);
+setState(produce(prev => {
+  prev.ids.splice(prev.ids.indexOf('a'), 1)
+  delete prev.entities['a']
+}));
 console.groupEnd();
