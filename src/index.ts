@@ -40,7 +40,11 @@ const { setState } = createRoot(() => {
   ))
 
   createEffect(() => {
-    console.log(`getCounters`, getCounters().map(i => JSON.stringify(i())))
+    console.log(`getCounters`, getCounters().map(i => i()))
+  })
+
+  createEffect(() => {
+    mapArray(getCounters, (getCounter) => console.log(`getCounter`, getCounter()))
   })
 
   const getColors = createMemo(mapArray(
@@ -49,7 +53,11 @@ const { setState } = createRoot(() => {
   ))
 
   createEffect(() => {
-    console.log(`getColors`, getColors().map(i => JSON.stringify(i())))
+    console.log(`getColors`, getColors().map(i => i()))
+  })
+
+  createEffect(() => {
+    mapArray(getColors, (getColor) => console.log(`getColor`, getColor()))
   })
 
   return { setState: setEntityChunkState };
