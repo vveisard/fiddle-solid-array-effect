@@ -11,7 +11,7 @@ import {
 import { createStore, produce } from "solid-js/store";
 //
 import {
-  createMappedEntityValueEffect,
+  onMappedEntityValueChange,
   createMappedEntityValueMemo,
   onMappedEntityValueCleanup,
   onMappedEntityValueMount,
@@ -137,7 +137,7 @@ const root = createRoot(() => {
     (entityId) => worldState.borbEntityCollectionState.states[entityId].color
   );
 
-  createMappedEntityValueEffect(
+  onMappedEntityValueChange(
     getEntityIdAndGetColor,
     (entityId, prevEntityValue, entityValue) => {
       console.log(

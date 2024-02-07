@@ -5,6 +5,7 @@ import {
   mapArray,
   onMount,
   onCleanup,
+  on,
 } from "solid-js";
 
 type EntityId = PropertyKey;
@@ -32,16 +33,15 @@ function createMappedEntityValueMemo<TEntityId extends EntityId, TEntityValue>(
 }
 
 /**
- * Create effects for mapped entity values.
+ * Create change effects for mapped entity values.
+ * @see {@link onMappedEntityValueMount} for mount effects.
+ * @see {@link onMappedEntityValueCleanup} for cleanup effects.
  * @remarks
  * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
  * @param getMappedEntityValues get mapped entity values.
  * @param effectFn function to run when a mapped entity value changes.
  */
-function createMappedEntityValueEffect<
-  TEntityId extends EntityId,
-  TEntityValue
->(
+function onMappedEntityValueChange<TEntityId extends EntityId, TEntityValue>(
   getMappedEntityValues: Accessor<Array<[TEntityId, Accessor<TEntityValue>]>>,
   effectFn: (
     entityId: TEntityId,
@@ -51,19 +51,23 @@ function createMappedEntityValueEffect<
 ) {
   createEffect(
     mapArray(getMappedEntityValues, ([entityId, getEntityValue]) => {
-      createEffect((prevEntityValue) => {
-        const entityValue: TEntityValue = getEntityValue();
-
-        effectFn(entityId, prevEntityValue, entityValue);
-
-        return entityValue;
-      });
+      createEffect(
+        on(
+          getEntityValue,
+          (inputEntityValue, prevInputEntityValue) => {
+            effectFn(entityId, prevInputEntityValue, inputEntityValue);
+          },
+          {
+            defer: true,
+          }
+        )
+      );
     })
   );
 }
 
 /**
- * Create mount lifecycle function for mapped entity values.
+ * Create mount effects for mapped entity values.
  * @remarks
  * Useful to delete objects in other systems.
  */
@@ -79,7 +83,7 @@ function onMappedEntityValueMount<TEntityId extends EntityId, TEntityValue>(
 }
 
 /**
- * Create cleanup lifecycle function for mapped entity values.
+ * Create cleanup effects for mapped entity values.
  * @remarks
  * Useful to delete objects in other systems.
  */
@@ -98,7 +102,7 @@ export {
   type EntityId,
   type EntityCollectionState,
   createMappedEntityValueMemo,
-  createMappedEntityValueEffect,
+  onMappedEntityValueChange,
   onMappedEntityValueMount,
   onMappedEntityValueCleanup,
 };
