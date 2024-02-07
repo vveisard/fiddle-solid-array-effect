@@ -126,7 +126,9 @@ const root = createRoot(() => {
     Array<[EntityId, Accessor<string | undefined>]>
   > = mapArray(getAllBorbEntityIds, (borbContentId) => [
     borbContentId,
-    () => worldState.borbEntityCollection.states[borbContentId]?.color,
+    createMemo<string | undefined>(
+      () => worldState.borbEntityCollection.states[borbContentId]?.color
+    ),
   ]) as Accessor<Array<[EntityId, Accessor<string>]>>;
 
   createEffect(
@@ -234,6 +236,18 @@ root.setWorldState(
     state.borbEntityCollection.states["a:cool"] = {
       color: "orange",
     };
+  })
+);
+console.groupEnd();
+
+console.group(`delete "a:cool"`);
+root.setWorldState(
+  produce((state) => {
+    state.borbEntityCollection.ids.splice(
+      state.borbEntityCollection.ids.indexOf("a:cool"),
+      1
+    );
+    delete state.borbEntityCollection.states["a:cool"];
   })
 );
 console.groupEnd();
