@@ -16,7 +16,6 @@ import {
   onMappedEntityValueCleanup,
   onMappedEntityValueMount,
   type EntityCollectionState,
-  type EntityId,
 } from "./base.ts";
 
 // @region-base
@@ -24,6 +23,12 @@ import {
 export type WritableDeep<T> = { -readonly [P in keyof T]: WritableDeep<T[P]> };
 
 // @region-end
+
+console = new console.Console({
+  stdout: process.stdout,
+  stderr: process.stderr,
+  groupIndentation: 2,
+}) as typeof console;
 
 interface BorbEntityState {
   readonly donkContentId: string;
@@ -37,7 +42,10 @@ interface WorldResources {
 }
 
 interface WorldState {
-  readonly borbEntityCollectionState: EntityCollectionState<BorbEntityState>;
+  readonly borbEntityCollectionState: EntityCollectionState<
+    string,
+    BorbEntityState
+  >;
 }
 
 const root = createRoot(() => {
@@ -54,7 +62,7 @@ const root = createRoot(() => {
 
   // @region-begin Basic
 
-  const getAllBorbEntityIds: Accessor<Array<EntityId>> = createMemo(
+  const getAllBorbEntityIds: Accessor<Array<string>> = createMemo(
     () => worldState.borbEntityCollectionState.ids
   );
 
@@ -72,7 +80,7 @@ const root = createRoot(() => {
         console.log(
           `getAllBorbEntityIds`,
           `mapArray/onCleanup`,
-          `untrack value ${borbEntityId} at index ${getIndex()}`
+          `untrack value ${String(borbEntityId)} at index ${getIndex()}`
         );
       });
 
@@ -81,7 +89,9 @@ const root = createRoot(() => {
         console.log(
           `getAllBorbEntityIds`,
           `mapArray/createEffect`,
-          `value ${borbEntityId} changed index from ${prevIndexOfValue} to ${currentIndexOfValue}`
+          `value ${String(
+            borbEntityId
+          )} changed index from ${prevIndexOfValue} to ${currentIndexOfValue}`
         );
 
         return currentIndexOfValue;
@@ -122,14 +132,9 @@ const root = createRoot(() => {
 
   // @region-end
 
-  const getEntityIdAndGetColor = createMappedEntityValueMemo<
-    BorbEntityState,
-    string
-  >(
-    () => worldState.borbEntityCollectionState,
+  const getEntityIdAndGetColor = createMappedEntityValueMemo(
     getAllBorbEntityIds,
-    (entityCollectionState, entityId) =>
-      entityCollectionState.states[entityId].color
+    (entityId) => worldState.borbEntityCollectionState.states[entityId].color
   );
 
   createMappedEntityValueEffect(

@@ -1,3 +1,15 @@
+# Concepts
+
+## entity value
+
+Value which was created from an entity id.
+
+This can be anything. eg, the entire entity state, or a property on the entity state.
+
+## mapped entity value
+
+Mapped from `mapArray`
+
 # Acknowledgements
 
 Thanks to @thetarnav.

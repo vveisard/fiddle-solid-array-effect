@@ -1,37 +1,50 @@
 import {
+  type Accessor,
   createEffect,
   createMemo,
   mapArray,
-  type Accessor,
   onMount,
   onCleanup,
 } from "solid-js";
 
-type EntityId = string;
+type EntityId = PropertyKey;
 
-interface EntityCollectionState<T> {
-  readonly ids: Array<EntityId>;
-  readonly states: Record<EntityId, T>;
+interface EntityCollectionState<TEntityKey extends EntityId, TEntityState> {
+  readonly ids: Array<TEntityKey>;
+  readonly states: Record<TEntityKey, TEntityState>;
 }
 
-function createMappedEntityValueMemo<TEntityState, TEntityValue>(
-  getEntityCollectionState: Accessor<EntityCollectionState<TEntityState>>,
-  getEntityIds: Accessor<Array<EntityId>>,
-  getEntityValueMapFn: (
-    entityCollectionState: EntityCollectionState<TEntityState>,
-    entityId: EntityId
-  ) => TEntityValue
-): Accessor<Array<[EntityId, Accessor<TEntityValue>]>> {
+/**
+ * Create memo of all values mapped from given entity ids.
+ * ie, a "query".
+ * @param getEntityIds entity ids used to map.
+ * @param getEntityValue map function used to get values.
+ * @returns
+ */
+function createMappedEntityValueMemo<TEntityId extends EntityId, TEntityValue>(
+  getEntityIds: Accessor<Array<TEntityId>>,
+  getEntityValue: (entityId: TEntityId) => TEntityValue
+): Accessor<Array<[TEntityId, Accessor<TEntityValue>]>> {
   return mapArray(getEntityIds, (entityId) => [
     entityId,
-    createMemo(() => getEntityValueMapFn(getEntityCollectionState(), entityId)),
-  ]) as Accessor<Array<[EntityId, Accessor<TEntityValue>]>>;
+    createMemo(() => getEntityValue(entityId)),
+  ]) as Accessor<Array<[TEntityId, Accessor<TEntityValue>]>>;
 }
 
-function createMappedEntityValueEffect<TEntityValue>(
-  getMappedEntityValues: Accessor<Array<[EntityId, Accessor<TEntityValue>]>>,
+/**
+ * Create effects for mapped entity values.
+ * @remarks
+ * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
+ * @param getMappedEntityValues get mapped entity values.
+ * @param effectFn function to run when a mapped entity value changes.
+ */
+function createMappedEntityValueEffect<
+  TEntityId extends EntityId,
+  TEntityValue
+>(
+  getMappedEntityValues: Accessor<Array<[TEntityId, Accessor<TEntityValue>]>>,
   effectFn: (
-    entityId: EntityId,
+    entityId: TEntityId,
     prevEntityValue: TEntityValue,
     entityValue: TEntityValue
   ) => TEntityValue
@@ -49,9 +62,14 @@ function createMappedEntityValueEffect<TEntityValue>(
   );
 }
 
-function onMappedEntityValueMount<TEntityValue>(
-  getMappedEntityValues: Accessor<Array<[EntityId, Accessor<TEntityValue>]>>,
-  mountFn: (entityId: EntityId, entityValue: TEntityValue) => void
+/**
+ * Create mount lifecycle function for mapped entity values.
+ * @remarks
+ * Useful to delete objects in other systems.
+ */
+function onMappedEntityValueMount<TEntityId extends EntityId, TEntityValue>(
+  getMappedEntityValues: Accessor<Array<[TEntityId, Accessor<TEntityValue>]>>,
+  mountFn: (entityId: TEntityId, entityValue: TEntityValue) => void
 ) {
   createEffect(
     mapArray(getMappedEntityValues, ([entityId, getEntityValue]) =>
@@ -60,9 +78,14 @@ function onMappedEntityValueMount<TEntityValue>(
   );
 }
 
-function onMappedEntityValueCleanup<TEntityValue>(
-  getMappedEntityValues: Accessor<Array<[EntityId, Accessor<TEntityValue>]>>,
-  cleanupFn: (entityId: EntityId, entityValue: TEntityValue) => void
+/**
+ * Create cleanup lifecycle function for mapped entity values.
+ * @remarks
+ * Useful to delete objects in other systems.
+ */
+function onMappedEntityValueCleanup<TEntityId extends EntityId, TEntityValue>(
+  getMappedEntityValues: Accessor<Array<[TEntityId, Accessor<TEntityValue>]>>,
+  cleanupFn: (entityId: TEntityId, entityValue: TEntityValue) => void
 ) {
   createEffect(
     mapArray(getMappedEntityValues, ([entityId, getEntityValue]) =>
