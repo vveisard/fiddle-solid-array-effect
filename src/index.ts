@@ -12,7 +12,7 @@ import { createStore, produce } from "solid-js/store";
 //
 import {
   onMappedEntityValueChange,
-  createMappedEntityValueMemo,
+  createMappedEntityValueMemos,
   onMappedEntityValueCleanup,
   onMappedEntityValueMount,
   type EntityCollectionState,
@@ -132,7 +132,7 @@ const root = createRoot(() => {
 
   // @region-end
 
-  const getEntityIdAndGetColor = createMappedEntityValueMemo(
+  const getEntityIdAndGetColor = createMappedEntityValueMemos(
     getAllBorbEntityIds,
     (entityId) => worldState.borbEntityCollectionState.states[entityId].color
   );
@@ -233,6 +233,18 @@ root.setWorldState(
         "a:cool"
       ] as WritableDeep<BorbEntityState>
     ).color = "orange";
+  })
+);
+console.groupEnd();
+
+console.group("change a:cool color");
+root.setWorldState(
+  produce((state) => {
+    (
+      state.borbEntityCollectionState.states[
+        "a:cool"
+      ] as WritableDeep<BorbEntityState>
+    ).color = "black";
   })
 );
 console.groupEnd();

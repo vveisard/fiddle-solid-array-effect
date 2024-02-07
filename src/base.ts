@@ -16,19 +16,19 @@ interface EntityCollectionState<TEntityKey extends EntityId, TEntityState> {
 }
 
 /**
- * Create memo of all values mapped from given entity ids.
+ * Create memos for all values mapped from given entity ids.
  * ie, a "query".
  * @param getEntityIds entity ids used to map.
  * @param getEntityValue map function used to get values.
  * @returns
  */
-function createMappedEntityValueMemo<TEntityId extends EntityId, TEntityValue>(
+function createMappedEntityValueMemos<TEntityId extends EntityId, TEntityValue>(
   getEntityIds: Accessor<Array<TEntityId>>,
   getEntityValue: (entityId: TEntityId) => TEntityValue
 ): Accessor<Array<[TEntityId, Accessor<TEntityValue>]>> {
   return mapArray(getEntityIds, (entityId) => [
     entityId,
-    createMemo(() => getEntityValue(entityId)),
+    createMemo(() => getEntityValue(entityId)), // @vveisard I don't understand why createMemo prevents `undefined` errors...
   ]) as Accessor<Array<[TEntityId, Accessor<TEntityValue>]>>;
 }
 
@@ -101,7 +101,7 @@ function onMappedEntityValueCleanup<TEntityId extends EntityId, TEntityValue>(
 export {
   type EntityId,
   type EntityCollectionState,
-  createMappedEntityValueMemo,
+  createMappedEntityValueMemos,
   onMappedEntityValueChange,
   onMappedEntityValueMount,
   onMappedEntityValueCleanup,
