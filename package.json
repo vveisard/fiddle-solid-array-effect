@@ -11,6 +11,6 @@
     "solid-js": "^1.8.7"
   },
   "scripts": {
-    "start": "bun run ./scripts/build.ts && bun run ./out/index.js"
+    "start": "bun build ./examples/index.ts > index.js && bun run ./index.js"
   }
 }

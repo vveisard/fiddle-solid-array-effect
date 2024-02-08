@@ -1,8 +1,9 @@
-STORY as a developer, I want 
-- createMappedEntityIdEffect
-- createMappedEntityEffect
+STORY as a user, I want GitHub versioned releases, so that I can install packages as tarballs
 
-STORY as a developer, I want Indexed Entity functions
-Like mapped entity functions, but uses indexArray
+STORY as a user, I want tests
 
-- createIndexedEntityEffect<TEntityState, TResult>(getEntityCollection: Accessor<EntityCollection>, mapFn: (entityId: EntityId, entityState: TEntityState) => TResult, (getEntityId: Acessor<EntityId>, entityIndex: number, value: TResult) => void);
+STORY as a developer, I want better effect, mount, and cleanup function types
+the call signatures of these functions should match the solid-js API. ie, match `Next` and `Prev` types
+
+STORY as a developer, I want Indexed Element and Indexed Entry functions
+Like mapped functions, but uses indexArray

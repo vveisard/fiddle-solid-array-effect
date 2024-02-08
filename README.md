@@ -1,19 +1,72 @@
 # Concepts
 
-## entity value
+Types and primitives for `mapArray` and `indexArray`.
 
-Value which was created from an entity id.
+## Mapped
 
-This can be anything. eg, the entire entity state, or a property on the entity state.
+### `onMappedMount`
 
-## mapped entity value
+Invokes mount function for a value of a list.
 
-Mapped from `mapArray`
+### `onMappedCleanup`
 
-# Acknowledgements
+Invokes cleanup function for a value of a list.
 
-Thanks to @thetarnav.
+### `onMappedIndexChange`
 
-https://playground.solidjs.com/anonymous/83da7ae2-a9cc-404c-a7ac-9fd487368460
+Invokes change function for a value of a list when the index changes with the previous index and current index.
 
-https://github.com/kuskusapp/kuskus/blob/main/src/lib/primitives.ts#L7
+## Indexed
+
+### `onIndexedMount`
+
+Invokes mount function for an index of a list.
+
+### `onIndexedCleanup`
+
+Invokes cleanup function for an index of a list.
+
+### `onIndexedValueChange`
+
+Invokes change function for an index of a list when the value changes with the previous value and current value.
+
+## MapResult
+
+Result of `mapArray`, where the result of `mapFn` is an `Acessor`. Used for higher-order reactivity.
+
+`type MapResult<TElement, TResult> = [TElement, Accessor<TResult>]` tuple of source element and accessor for the result of the `mapFn`.
+
+Ideal for keyed data structures; ie, the source element is a key, and the result is derived from the value.
+
+### Primitives
+
+Primitives are included.
+
+#### `createMapResults`
+
+Create `Accessor` for an `Array` of `MapResult` using `mapArray`. ie, creates `Acessor<Array<MapResult>>`.
+
+#### `onMappedMapResultMount`
+
+Invokes mount function for a `MapResult` with the initial value of the reuslt.
+
+#### `onMappedMapResultCleanup`
+
+Invokes cleanup function for a `MapResult` with the last value of the result.
+
+#### `onMappedMapResultValueChange`
+
+Invokes change function for a `MapResult` with previous value of the result, and the current value of the result.
+
+#### `onMappedMapResultIndexChange`
+
+Invokes change function for a `MapResult`, with previous index of that `MapResult`, and current index of that `MapResult`.
+
+# Future
+
+Hypothetically there could be:
+
+- `IndexedMapResult...` primtives
+- `IndexResult` type with `MappedIndexResult...` and `IndexedIndexResult..` primitives
+
+The use of these is unclear to me.

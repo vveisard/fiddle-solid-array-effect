@@ -1,262 +1,273 @@
 import {
   type Accessor,
-  createMemo,
-  createRoot,
   createEffect,
+  createMemo,
   mapArray,
-  indexArray,
   onMount,
   onCleanup,
+  on,
+  indexArray,
 } from "solid-js";
-import { createStore, produce } from "solid-js/store";
-//
-import {
-  onMappedEntityValueChange,
-  createMappedEntityValueMemos,
-  onMappedEntityValueCleanup,
-  onMappedEntityValueMount,
-  type EntityCollectionState,
-} from "./base.ts";
 
-// @region-base
+// @region-begin
 
-export type WritableDeep<T> = { -readonly [P in keyof T]: WritableDeep<T[P]> };
+/**
+ * Create effect for mount of element from {@link indexArray}.
+ */
+function onIndexedMount<TElement>(
+  getElement: Accessor<Array<TElement>>,
+  fn: (getElement: Accessor<TElement>, index: number) => void
+) {
+  createEffect(
+    indexArray(getElement, (getElement, index) => {
+      onMount(() => fn(getElement, index));
+    })
+  );
+}
+
+/**
+ * Create effect for cleanup of element from {@link indexArray}.
+ */
+function onIndexedCleanup<TElement>(
+  getElements: Accessor<Array<TElement>>,
+  fn: (getElement: Accessor<TElement>, index: number) => void
+) {
+  createEffect(
+    indexArray(getElements, (getElement, index) => {
+      onCleanup(() => fn(getElement, index));
+    })
+  );
+}
+
+/**
+ * Create effect for changed value of element from {@link indexArray}.
+ * @remarks
+ * Deferred.
+ */
+function onIndexedValueChanged<TElement>(
+  getElements: Accessor<Array<TElement>>,
+  fn: (element: TElement, prevElement: TElement, index: number) => void
+) {
+  createEffect(
+    indexArray(getElements, (getElement, index) => {
+      const initialValue = getElement(); // fixes https://github.com/solidjs/solid/issues/2065
+
+      createEffect(
+        on(
+          getElement,
+          (inputElement, prevInputElement) => {
+            fn(inputElement, prevInputElement ?? initialValue, index);
+          },
+          {
+            defer: true,
+          }
+        )
+      );
+    })
+  );
+}
+
+export { onIndexedMount, onIndexedCleanup, onIndexedValueChanged };
 
 // @region-end
 
-console = new console.Console({
-  stdout: process.stdout,
-  stderr: process.stderr,
-  groupIndentation: 2,
-}) as typeof console;
+// @region-begin
 
-interface BorbEntityState {
-  readonly donkContentId: string;
-  readonly color: string;
-}
-
-interface DonkResourceData {}
-
-interface WorldResources {
-  readonly donkResources: Record<string, DonkResourceData>;
-}
-
-interface WorldState {
-  readonly borbEntityCollectionState: EntityCollectionState<
-    string,
-    BorbEntityState
-  >;
-}
-
-const root = createRoot(() => {
-  const [worldState, setWorldState] = createStore<WorldState>({
-    borbEntityCollectionState: {
-      ids: [],
-      states: {},
-    },
-  });
-
-  const [worldResources, setWorldResources] = createStore<WorldResources>({
-    donkResources: {},
-  });
-
-  // @region-begin Basic
-
-  const getAllBorbEntityIds: Accessor<Array<string>> = createMemo(
-    () => worldState.borbEntityCollectionState.ids
-  );
-
+/**
+ * Create effect for mount of element from {@link mapArray}.
+ */
+function onMappedMount<TElement>(
+  getElements: Accessor<Array<TElement>>,
+  fn: (element: TElement, getIndex: Accessor<number>) => void
+) {
   createEffect(
-    mapArray(getAllBorbEntityIds, (borbEntityId, getIndex) => {
-      onMount(() => {
-        console.log(
-          `getAllBorbEntityIds`,
-          `mapArray/onMount`,
-          `track value ${borbEntityId} at index ${getIndex()}`
-        );
-      });
-
-      onCleanup(() => {
-        console.log(
-          `getAllBorbEntityIds`,
-          `mapArray/onCleanup`,
-          `untrack value ${String(borbEntityId)} at index ${getIndex()}`
-        );
-      });
-
-      createEffect((prevIndexOfValue: number | undefined) => {
-        const currentIndexOfValue = getIndex();
-        console.log(
-          `getAllBorbEntityIds`,
-          `mapArray/createEffect`,
-          `value ${String(
-            borbEntityId
-          )} changed index from ${prevIndexOfValue} to ${currentIndexOfValue}`
-        );
-
-        return currentIndexOfValue;
-      });
+    mapArray(getElements, (element, getIndex) => {
+      onMount(() => fn(element, getIndex));
     })
   );
+}
 
+/**
+ * Create effect for cleanup of element from {@link mapArray}.
+ */
+function onMappedCleanup<TElement>(
+  getElements: Accessor<Array<TElement>>,
+  fn: (element: TElement, getIndex: Accessor<number>) => void
+) {
   createEffect(
-    indexArray(getAllBorbEntityIds, (getBorbEntityId, index) => {
-      onMount(() => {
-        console.log(
-          `getAllBorbEntityIds`,
-          `indexArray/onMount`,
-          `track index ${index} with value ${getBorbEntityId()}`
-        );
-      });
-
-      onCleanup(() => {
-        console.log(
-          `getAllBorbEntityIds`,
-          `indexArray/onCleanup`,
-          `untrack index ${index} with value ${getBorbEntityId()}`
-        );
-      });
-
-      createEffect((prevValueAtIndex: string | undefined) => {
-        const currentValueAtIndex = getBorbEntityId();
-        console.log(
-          `getAllBorbEntityIds`,
-          `indexArray/createEffect`,
-          `index ${index} changed value from ${prevValueAtIndex} to ${currentValueAtIndex}`
-        );
-
-        return currentValueAtIndex;
-      });
+    mapArray(getElements, (element, getIndex) => {
+      onCleanup(() => fn(element, getIndex));
     })
   );
+}
 
-  // @region-end
+/**
+ * Create effect for changed index of element from {@link mapArray}.
+ * @remarks
+ * Deferred.
+ */
+function onMappedIndexChange<T>(
+  getElements: Accessor<Array<T>>,
+  fn: (element: T, index: number, prevIndex: number) => void
+) {
+  createEffect(
+    mapArray(getElements, (element, getIndex) => {
+      const initialIndex = getIndex(); // fixes https://github.com/solidjs/solid/issues/2065
 
-  const getEntityIdAndGetColor = createMappedEntityValueMemos(
-    getAllBorbEntityIds,
-    (entityId) => worldState.borbEntityCollectionState.states[entityId].color
-  );
-
-  onMappedEntityValueChange(
-    getEntityIdAndGetColor,
-    (entityId, prevEntityValue, entityValue) => {
-      console.log(
-        `entity ${entityId} color changed from ${prevEntityValue} to ${entityValue}`
+      createEffect(
+        on(
+          getIndex,
+          (inputIndex, prevInputIndex) => {
+            fn(element, inputIndex, prevInputIndex ?? initialIndex);
+          },
+          {
+            defer: true,
+          }
+        )
       );
-
-      return entityValue;
-    }
+    })
   );
+}
 
-  onMappedEntityValueMount(getEntityIdAndGetColor, (entityId, entityValue) => {
-    console.log(`entity ${entityId} created with color ${entityValue}`);
-  });
+export { onMappedCleanup, onMappedMount, onMappedIndexChange };
 
-  onMappedEntityValueCleanup(
-    getEntityIdAndGetColor,
-    (entityId, entityValue) => {
-      console.log(`entity ${entityId} deleted with color ${entityValue}`);
-    }
+// @region-end
+
+// @region-begin MapResult
+
+/**
+ * Result of {@link mapArray}, where the result is reactive.
+ */
+type MapResult<TElement, TResult> = [TElement, Accessor<TResult>];
+
+/**
+ * Create a memo of {@link MapResult}.
+ * @param list used to map.
+ * @param mapFn function used to create {@link MapResult}.
+ */
+function createMapResults<TElement, TResult>(
+  list: Accessor<Array<TElement>>,
+  mapFn: (element: TElement, getIndex: Accessor<number>) => TResult
+): Accessor<Array<MapResult<TElement, TResult>>> {
+  return mapArray(list, (element, getIndex) => [
+    element,
+    createMemo(() => mapFn(element, getIndex)),
+  ]);
+}
+
+// @region-end
+
+// @region-begin MappedMapResult
+
+/**
+ * Create effect for mount of {@link MapResult} from {@link mapArray}.
+ * @remarks
+ * Useful to create objects in other systems.
+ */
+function onMappedMapResultMount<TElement, TResult>(
+  getMapResults: Accessor<Array<MapResult<TElement, TResult>>>,
+  fn: (element: TElement, result: TResult, getIndex: Accessor<number>) => void
+): void {
+  createEffect(
+    mapArray(getMapResults, ([element, getResult], getIndex) =>
+      onMount(() => fn(element, getResult(), getIndex))
+    )
   );
+}
 
-  return {
-    setWorldState,
-    setWorldResources,
-  };
-});
+/**
+ * Create effect for cleanup of {@link MapResult} from {@link mapArray}.
+ * @remarks
+ * Useful to delete objects in other systems.
+ */
+function onMappedMapResultCleanup<TElement, TResult>(
+  getMapResults: Accessor<Array<MapResult<TElement, TResult>>>,
+  fn: (element: TElement, result: TResult) => void
+): void {
+  createEffect(
+    mapArray(getMapResults, ([element, getResult]) =>
+      onCleanup(() => fn(element, getResult()))
+    )
+  );
+}
 
-console.group(`create "a:cool"`);
-root.setWorldState(
-  produce((state) => {
-    state.borbEntityCollectionState.ids.push("a:cool");
-    state.borbEntityCollectionState.states["a:cool"] = {
-      color: "red",
-      donkContentId: "sunglasses",
-    };
-  })
-);
-console.groupEnd();
+/**
+ * Create effect for changed value of {@link MapResult} from {@link mapArray}.
+ * @see {@link onMappedMapResultMount} for mount effects.
+ * @see {@link onMappedMapResultCleanup} for cleanup effects.
+ * @param getMapResult get mapped results.
+ * @param fn function to run when a result changes.
+ * @remarks
+ * Deferred.
+ * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
+ */
+function onMappedMapResultValueChange<TElement, TResult>(
+  getMapResult: Accessor<Array<MapResult<TElement, TResult>>>,
+  fn: (
+    element: TElement,
+    getIndex: Accessor<number>,
+    result: TResult,
+    prevResult: TResult
+  ) => TResult
+): void {
+  createEffect(
+    mapArray(getMapResult, ([element, getResult], getIndex) => {
+      const initialResult = getResult(); // fixes https://github.com/solidjs/solid/issues/2065
+      createEffect(
+        on(
+          getResult,
+          (inputResult, prevInputResult) => {
+            fn(
+              element,
+              getIndex,
+              inputResult,
+              prevInputResult ?? initialResult
+            );
+          },
+          {
+            defer: true,
+          }
+        )
+      );
+    })
+  );
+}
 
-console.group(`create "b:rude"`);
-root.setWorldState(
-  produce((state) => {
-    state.borbEntityCollectionState.ids.push("b:rude");
-    state.borbEntityCollectionState.states["b:rude"] = {
-      color: "yellow",
-      donkContentId: "cigarette",
-    };
-  })
-);
-console.groupEnd();
+/**
+ * Create effect for changed index of {@link MapResult} from {@link mapArray}.
+ * @remarks deferred.
+ */
+function onMappedMapResultIndexChange<TElement, TResult>(
+  getMapResults: Accessor<Array<MapResult<TElement, TResult>>>,
+  fn: (
+    element: TElement,
+    getResult: Accessor<TResult>,
+    index: number,
+    prevIndex: number
+  ) => void
+) {
+  createEffect(
+    mapArray(getMapResults, ([element, getResult], getIndex) => {
+      const initialIndex = getIndex(); // fixes https://github.com/solidjs/solid/issues/2065
+      createEffect(
+        on(
+          getIndex,
+          (inputIndex, prevInputIndex) => {
+            fn(element, getResult, inputIndex, prevInputIndex ?? initialIndex);
+          },
+          {
+            defer: true,
+          }
+        )
+      );
+    })
+  );
+}
 
-console.group(`create "c:fun"`);
-root.setWorldState(
-  produce((state) => {
-    state.borbEntityCollectionState.ids.push("c:fun");
-    state.borbEntityCollectionState.states["c:fun"] = {
-      color: "purple",
-      donkContentId: "party-hat",
-    };
-  })
-);
-console.groupEnd();
-
-console.group(`delete "b:rude"`);
-root.setWorldState(
-  produce((state) => {
-    state.borbEntityCollectionState.ids.splice(
-      state.borbEntityCollectionState.ids.indexOf("b:rude"),
-      1
-    );
-    delete state.borbEntityCollectionState.states["b:rude"];
-  })
-);
-console.groupEnd();
-
-console.group("create d:smart");
-root.setWorldState(
-  produce((state) => {
-    state.borbEntityCollectionState.ids.push("d:smart");
-    state.borbEntityCollectionState.states["d:smart"] = {
-      color: "green",
-      donkContentId: "glasses",
-    };
-  })
-);
-console.groupEnd();
-
-console.group("change a:cool color");
-root.setWorldState(
-  produce((state) => {
-    (
-      state.borbEntityCollectionState.states[
-        "a:cool"
-      ] as WritableDeep<BorbEntityState>
-    ).color = "orange";
-  })
-);
-console.groupEnd();
-
-console.group("change a:cool color");
-root.setWorldState(
-  produce((state) => {
-    (
-      state.borbEntityCollectionState.states[
-        "a:cool"
-      ] as WritableDeep<BorbEntityState>
-    ).color = "black";
-  })
-);
-console.groupEnd();
-
-console.group(`delete "a:cool"`);
-root.setWorldState(
-  produce((state) => {
-    state.borbEntityCollectionState.ids.splice(
-      state.borbEntityCollectionState.ids.indexOf("a:cool"),
-      1
-    );
-    delete state.borbEntityCollectionState.states["a:cool"];
-  })
-);
-console.groupEnd();
+export {
+  createMapResults,
+  onMappedMapResultValueChange,
+  onMappedMapResultMount,
+  onMappedMapResultCleanup,
+  onMappedMapResultIndexChange,
+};
