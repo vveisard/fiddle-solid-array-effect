@@ -32,11 +32,11 @@ Invokes change function for an index of a list when the value changes with the p
 
 ## MapResult
 
-Result of `mapArray`, where the result of `mapFn` is an `Acessor`. Used for higher-order reactivity.
+Result of `mapArray`, where the result of `mapFn` is the source element and an `Accessor`. Used for higher-order reactivity.
 
 `type MapResult<TElement, TResult> = [TElement, Accessor<TResult>]` tuple of source element and accessor for the result of the `mapFn`.
 
-Ideal for keyed data structures; ie, the source element is a key, and the result is derived from the value.
+Ideal for reactivity with keyed data structures; ie, the source element is a key, and the result is derived from the value.
 
 ### Primitives
 
@@ -44,7 +44,7 @@ Primitives are included.
 
 #### `createMapResults`
 
-Create `Accessor` for an `Array` of `MapResult` using `mapArray`. ie, creates `Acessor<Array<MapResult>>`.
+Create `Accessor` for an `Array` of `MapResult` using `mapArray`. ie, creates `Accessor<Array<MapResult>>`.
 
 #### `onMappedMapResultMount`
 
