@@ -12,7 +12,7 @@ import {
 // @region-begin
 
 /**
- * Create effect for mount of element from {@link indexArray}.
+ * Create effect for mount of index from {@link indexArray}.
  */
 function onIndexedMount<TElement>(
   getElement: Accessor<Array<TElement>>,
@@ -26,7 +26,7 @@ function onIndexedMount<TElement>(
 }
 
 /**
- * Create effect for cleanup of element from {@link indexArray}.
+ * Create effect for cleanup of inde from {@link indexArray}.
  */
 function onIndexedCleanup<TElement>(
   getElements: Accessor<Array<TElement>>,
@@ -40,7 +40,7 @@ function onIndexedCleanup<TElement>(
 }
 
 /**
- * Create effect for changed value of element from {@link indexArray}.
+ * Create effect for changed value of index from {@link indexArray}.
  * @remarks
  * Deferred.
  */
