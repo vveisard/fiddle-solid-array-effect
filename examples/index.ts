@@ -4,15 +4,15 @@ import { createStore, produce } from "solid-js/store";
 import {
   onMapArrayMount,
   onMapArrayCleanup,
-  onMapArrayIndexChange,
-  onIndexArrayValueChange,
+  createMapArrayOnIndexChangeEffect,
+  createIndexArrayOnValueChangeEffect,
   onIndexArrayCleanup,
   onIndexArrayMount,
   createMapArrayResultEffect,
-  onMapArrayResultChange,
+  createMapArrayOnResultValueChangeEffect,
+  createMapArrayOnResultIndexChangeEffect,
   onMapArrayResultMount,
   onMapArrayResultCleanup,
-  onMapArrayResultIndexChange,
 } from "../src/index.ts";
 
 // @region-begin base
@@ -88,14 +88,17 @@ const root = createRoot(() => {
     );
   });
 
-  onMapArrayIndexChange(getAllBorbEntityIds, (element, index, prevIndex) => {
-    console.log(
-      onMapArrayIndexChange.name,
-      `${String(element)} changed index from ${prevIndex} to ${index}`
-    );
-  });
+  createMapArrayOnIndexChangeEffect(
+    getAllBorbEntityIds,
+    (element, index, prevIndex) => {
+      console.log(
+        createMapArrayOnIndexChangeEffect.name,
+        `${String(element)} changed index from ${prevIndex} to ${index}`
+      );
+    }
+  );
 
-  createMapArrayResultEffect(
+  createMapArrayOnResultValueChangeEffect(
     getAllBorbEntityIds,
     (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
     (entityId, getIndex, color, prevColor) => {
@@ -122,11 +125,11 @@ const root = createRoot(() => {
     );
   });
 
-  onIndexArrayValueChange(
+  createIndexArrayOnValueChangeEffect(
     getAllBorbEntityIds,
     (element, prevElement, index) => {
       console.log(
-        onIndexArrayValueChange.name,
+        createIndexArrayOnValueChangeEffect.name,
         `${index} changed value from ${prevElement} to ${element}`
       );
     }
@@ -137,10 +140,10 @@ const root = createRoot(() => {
   onMapArrayResultMount(
     getAllBorbEntityIds,
     (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
-    (entityId, getIndex, color) => {
+    (entityId, getIndex, getColor) => {
       console.log(
         onMapArrayResultMount.name,
-        `${entityId} created at index ${getIndex()} with color ${color}`
+        `${entityId} created at index ${getIndex()} with color ${getColor()}`
       );
     }
   );
@@ -148,45 +151,32 @@ const root = createRoot(() => {
   onMapArrayResultCleanup(
     getAllBorbEntityIds,
     (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
-    (entityId, getIndex, color) => {
+    (entityId, getIndex, getColor) => {
       console.log(
         onMapArrayResultCleanup.name,
-        `${entityId} disposed at index ${getIndex()} with color ${color}`
+        `${entityId} disposed at index ${getIndex()} with color ${getColor()}`
       );
     }
   );
 
-  onMapArrayResultChange(
+  createMapArrayOnResultValueChangeEffect(
     getAllBorbEntityIds,
     (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
     (entityId, _getIndex, color, prevColor) => {
       console.log(
-        onMapArrayResultChange.name,
+        createMapArrayOnResultValueChangeEffect.name,
         `${entityId} color changed from ${prevColor} to ${color}`
       );
     }
   );
 
-  onMapArrayResultIndexChange(
+  createMapArrayOnResultIndexChangeEffect(
     getAllBorbEntityIds,
     (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
-    (entityId, index, prevIndex, color) => {
+    (entityId, index, prevIndex, getColor) => {
       console.log(
-        onMapArrayResultIndexChange.name,
-        `${entityId} index changed from ${prevIndex} to ${index} with color ${color}`
-      );
-
-      return color;
-    }
-  );
-
-  createMapArrayResultEffect(
-    getAllBorbEntityIds,
-    (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
-    (entityId, _getIndex, color, prevColor) => {
-      console.log(
-        createMapArrayResultEffect.name,
-        `${entityId} color changed from ${prevColor} to ${color}`
+        createMapArrayOnResultIndexChangeEffect.name,
+        `${entityId} index changed from ${prevIndex} to ${index} with color ${getColor()}`
       );
     }
   );

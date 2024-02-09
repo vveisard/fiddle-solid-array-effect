@@ -1095,7 +1095,7 @@ var onIndexArrayCleanup = function(getValues, fn) {
     onCleanup(() => fn(getValue, index));
   }));
 };
-var onIndexArrayValueChange = function(getValues, fn) {
+var createIndexArrayOnValueChangeEffect = function(getValues, fn) {
   createEffect(indexArray(getValues, (getValue, index) => {
     const initialValue = getValue();
     createEffect(on(getValue, (inputValue, prevInputValue) => {
@@ -1115,7 +1115,7 @@ var onMapArrayCleanup = function(getValues, fn) {
     onCleanup(() => fn(value, getIndex));
   }));
 };
-var onMapArrayIndexChange = function(getValues, fn) {
+var createMapArrayOnIndexChangeEffect = function(getValues, fn) {
   createEffect(mapArray(getValues, (value, getIndex) => {
     const initialIndex = getIndex();
     createEffect(on(getIndex, (inputIndex, prevInputIndex) => {
@@ -1125,17 +1125,25 @@ var onMapArrayIndexChange = function(getValues, fn) {
     }));
   }));
 };
+var onMapArrayResultMount = function(list, mapFn, fn) {
+  createEffect(mapArray(list, (value, getIndex) => {
+    const getMapResult = createMemo(() => mapFn(value, getIndex));
+    onMount(() => fn(value, getIndex, getMapResult));
+  }));
+};
+var onMapArrayResultCleanup = function(list, mapFn, fn) {
+  createEffect(mapArray(list, (value, getIndex) => {
+    const getMapResult = createMemo(() => mapFn(value, getIndex));
+    onCleanup(() => fn(value, getIndex, getMapResult));
+  }));
+};
 var createMapArrayResultEffect = function(list, mapFn, fn) {
   createEffect(mapArray(list, (value, getIndex) => {
     const getMapResult = createMemo(() => mapFn(value, getIndex));
-    createEffect((prevMapResult) => {
-      const mapResult = getMapResult();
-      fn(value, getIndex, mapResult, prevMapResult);
-      return mapResult;
-    }, getMapResult());
+    createEffect(() => fn(value, getIndex, getMapResult));
   }));
 };
-var onMapArrayResultChange = function(list, mapFn, fn) {
+var createMapArrayOnResultValueChangeEffect = function(list, mapFn, fn) {
   createEffect(mapArray(list, (value, getIndex) => {
     const getMapResult = createMemo(() => mapFn(value, getIndex));
     const initialResult = getMapResult();
@@ -1146,27 +1154,15 @@ var onMapArrayResultChange = function(list, mapFn, fn) {
     }));
   }));
 };
-var onMapArrayResultIndexChange = function(list, mapFn, fn) {
+var createMapArrayOnResultIndexChangeEffect = function(list, mapFn, fn) {
   createEffect(mapArray(list, (value, getIndex) => {
     const getMapResult = createMemo(() => mapFn(value, getIndex));
     const initialIndex = getIndex();
     createEffect(on(getIndex, (inputIndex, prevInputIndex) => {
-      fn(value, inputIndex, prevInputIndex ?? initialIndex, getMapResult());
+      fn(value, inputIndex, prevInputIndex ?? initialIndex, getMapResult);
     }, {
       defer: true
     }));
-  }));
-};
-var onMapArrayResultMount = function(list, mapFn, fn) {
-  createEffect(mapArray(list, (value, getIndex) => {
-    const getMapResult = createMemo(() => mapFn(value, getIndex));
-    onMount(() => fn(value, getIndex, getMapResult()));
-  }));
-};
-var onMapArrayResultCleanup = function(list, mapFn, fn) {
-  createEffect(mapArray(list, (value, getIndex) => {
-    const getMapResult = createMemo(() => mapFn(value, getIndex));
-    onCleanup(() => fn(value, getIndex, getMapResult()));
   }));
 };
 
@@ -1193,8 +1189,12 @@ var root = createRoot(() => {
   onMapArrayCleanup(getAllBorbEntityIds, (element, getIndex) => {
     console.log(onMapArrayCleanup.name, `${String(element)} disposed at index ${getIndex()}`);
   });
-  onMapArrayIndexChange(getAllBorbEntityIds, (element, index, prevIndex) => {
-    console.log(onMapArrayIndexChange.name, `${String(element)} changed index from ${prevIndex} to ${index}`);
+  createMapArrayOnIndexChangeEffect(getAllBorbEntityIds, (element, index, prevIndex) => {
+    console.log(createMapArrayOnIndexChangeEffect.name, `${String(element)} changed index from ${prevIndex} to ${index}`);
+  });
+  createMapArrayOnResultValueChangeEffect(getAllBorbEntityIds, (entityId) => worldState.borbEntityCollectionState.states[entityId].color, (entityId, getIndex, color, prevColor) => {
+    console.log(createMapArrayResultEffect.name, `${entityId} color changed from ${prevColor} to ${color}`);
+    return color;
   });
   onIndexArrayMount(getAllBorbEntityIds, (getElement, index) => {
     console.log(onIndexArrayMount.name, `${index} created with value ${getElement()}`);
@@ -1202,24 +1202,20 @@ var root = createRoot(() => {
   onIndexArrayCleanup(getAllBorbEntityIds, (getElement, index) => {
     console.log(onIndexArrayCleanup.name, `index ${index} with value ${getElement()}`);
   });
-  onIndexArrayValueChange(getAllBorbEntityIds, (element, prevElement, index) => {
-    console.log(onIndexArrayValueChange.name, `${index} changed value from ${prevElement} to ${element}`);
+  createIndexArrayOnValueChangeEffect(getAllBorbEntityIds, (element, prevElement, index) => {
+    console.log(createIndexArrayOnValueChangeEffect.name, `${index} changed value from ${prevElement} to ${element}`);
   });
-  onMapArrayResultMount(getAllBorbEntityIds, (entityId) => worldState.borbEntityCollectionState.states[entityId].color, (entityId, getIndex, color) => {
-    console.log(onMapArrayResultMount.name, `${entityId} created at index ${getIndex()} with color ${color}`);
+  onMapArrayResultMount(getAllBorbEntityIds, (entityId) => worldState.borbEntityCollectionState.states[entityId].color, (entityId, getIndex, getColor) => {
+    console.log(onMapArrayResultMount.name, `${entityId} created at index ${getIndex()} with color ${getColor()}`);
   });
-  onMapArrayResultCleanup(getAllBorbEntityIds, (entityId) => worldState.borbEntityCollectionState.states[entityId].color, (entityId, getIndex, color) => {
-    console.log(onMapArrayResultCleanup.name, `${entityId} disposed at index ${getIndex()} with color ${color}`);
+  onMapArrayResultCleanup(getAllBorbEntityIds, (entityId) => worldState.borbEntityCollectionState.states[entityId].color, (entityId, getIndex, getColor) => {
+    console.log(onMapArrayResultCleanup.name, `${entityId} disposed at index ${getIndex()} with color ${getColor()}`);
   });
-  onMapArrayResultChange(getAllBorbEntityIds, (entityId) => worldState.borbEntityCollectionState.states[entityId].color, (entityId, _getIndex, color, prevColor) => {
-    console.log(onMapArrayResultChange.name, `${entityId} color changed from ${prevColor} to ${color}`);
+  createMapArrayOnResultValueChangeEffect(getAllBorbEntityIds, (entityId) => worldState.borbEntityCollectionState.states[entityId].color, (entityId, _getIndex, color, prevColor) => {
+    console.log(createMapArrayOnResultValueChangeEffect.name, `${entityId} color changed from ${prevColor} to ${color}`);
   });
-  onMapArrayResultIndexChange(getAllBorbEntityIds, (entityId) => worldState.borbEntityCollectionState.states[entityId].color, (entityId, index, prevIndex, color) => {
-    console.log(onMapArrayResultIndexChange.name, `${entityId} index changed from ${prevIndex} to ${index} with color ${color}`);
-    return color;
-  });
-  createMapArrayResultEffect(getAllBorbEntityIds, (entityId) => worldState.borbEntityCollectionState.states[entityId].color, (entityId, _getIndex, color, prevColor) => {
-    console.log(createMapArrayResultEffect.name, `${entityId} color changed from ${prevColor} to ${color}`);
+  createMapArrayOnResultIndexChangeEffect(getAllBorbEntityIds, (entityId) => worldState.borbEntityCollectionState.states[entityId].color, (entityId, index, prevIndex, getColor) => {
+    console.log(createMapArrayOnResultIndexChangeEffect.name, `${entityId} index changed from ${prevIndex} to ${index} with color ${getColor()}`);
   });
   return {
     setWorldState,

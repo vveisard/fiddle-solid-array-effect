@@ -40,11 +40,25 @@ function onIndexArrayCleanup<TValue>(
 }
 
 /**
+ * Create effect for index from {@link mapArray}.
+ */
+function createIndexArrayEffect<T>(
+  getValues: Accessor<Array<T>>,
+  fn: (getValue: Accessor<T>, index: number) => T // TOOD effect function
+) {
+  createEffect(
+    indexArray(getValues, (getValue, index) => {
+      createEffect(() => fn(getValue, index));
+    })
+  );
+}
+
+/**
  * Create effect for changed value of index from {@link indexArray}.
  * @remarks
  * Deferred.
  */
-function onIndexArrayValueChange<TValue>(
+function createIndexArrayOnValueChangeEffect<TValue>(
   getValues: Accessor<Array<TValue>>,
   fn: (value: TValue, prevValue: TValue, index: number) => void
 ) {
@@ -67,7 +81,12 @@ function onIndexArrayValueChange<TValue>(
   );
 }
 
-export { onIndexArrayMount, onIndexArrayCleanup, onIndexArrayValueChange };
+export {
+  onIndexArrayMount,
+  onIndexArrayCleanup,
+  createIndexArrayEffect,
+  createIndexArrayOnValueChangeEffect,
+};
 
 // @region-end
 
@@ -102,11 +121,25 @@ function onMapArrayCleanup<TValue>(
 }
 
 /**
+ * Create effect for value from {@link mapArray}.
+ */
+function createMapArrayEffect<T>(
+  getValues: Accessor<Array<T>>,
+  fn: (value: T, getIndex: Accessor<number>) => T // TOOD effect function
+) {
+  createEffect(
+    mapArray(getValues, (value, getIndex) => {
+      createEffect(() => fn(value, getIndex));
+    })
+  );
+}
+
+/**
  * Create effect for changed index of value from {@link mapArray}.
  * @remarks
  * Deferred.
  */
-function onMapArrayIndexChange<T>(
+function createMapArrayOnIndexChangeEffect<T>(
   getValues: Accessor<Array<T>>,
   fn: (value: T, index: number, prevIndex: number) => void
 ) {
@@ -129,18 +162,67 @@ function onMapArrayIndexChange<T>(
   );
 }
 
-export { onMapArrayCleanup, onMapArrayMount, onMapArrayIndexChange };
+export {
+  onMapArrayCleanup,
+  onMapArrayMount,
+  createMapArrayEffect,
+  createMapArrayOnIndexChangeEffect,
+};
 
 // @region-end
 
 /**
- * Create effect for changed result of {@link fn} from {@link mapArray}.
- * @see {@link onMappedMapResultMount} for mount effects.
- * @see {@link onMappedMapResultCleanup} for cleanup effects.
+ * Create effect for changed value of {@link MapResult} from {@link mapArray}.
  * @param mapFn get mapped results.
  * @param fn function to run when a result changes.
  * @remarks
+ * Deferred.
  * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
+ */
+function onMapArrayResultMount<TValue, TResult>(
+  list: Accessor<Array<TValue>>,
+  mapFn: (value: TValue, getIndex: Accessor<number>) => TResult,
+  fn: (
+    value: TValue,
+    getIndex: Accessor<number>,
+    getResult: Accessor<TResult>
+  ) => void
+): void {
+  createEffect(
+    mapArray(list, (value, getIndex) => {
+      const getMapResult = createMemo(() => mapFn(value, getIndex));
+      onMount(() => fn(value, getIndex, getMapResult));
+    })
+  );
+}
+
+/**
+ * Create effect for changed value of {@link MapResult} from {@link mapArray}.
+ * @param getMapResult get mapped results.
+ * @param fn function to run when a result changes.
+ * @remarks
+ * Deferred.
+ * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
+ */
+function onMapArrayResultCleanup<TValue, TResult>(
+  list: Accessor<Array<TValue>>,
+  mapFn: (value: TValue, getIndex: Accessor<number>) => TResult,
+  fn: (
+    value: TValue,
+    getIndex: Accessor<number>,
+    getMapResult: Accessor<TResult>
+  ) => void
+): void {
+  createEffect(
+    mapArray(list, (value, getIndex) => {
+      const getMapResult = createMemo(() => mapFn(value, getIndex));
+      onCleanup(() => fn(value, getIndex, getMapResult));
+    })
+  );
+}
+
+/**
+ * Create effect for value from {@link mapArray}.
  */
 function createMapArrayResultEffect<TValue, TResult>(
   list: Accessor<Array<TValue>>,
@@ -148,21 +230,13 @@ function createMapArrayResultEffect<TValue, TResult>(
   fn: (
     value: TValue,
     getIndex: Accessor<number>,
-    result: TResult,
-    prevResult: TResult
-  ) => void
-): void {
+    getResult: Accessor<TResult>
+  ) => void // TOOD effect function
+) {
   createEffect(
     mapArray(list, (value, getIndex) => {
       const getMapResult = createMemo(() => mapFn(value, getIndex));
-
-      createEffect<TResult>((prevMapResult) => {
-        const mapResult = getMapResult();
-
-        fn(value, getIndex, mapResult, prevMapResult);
-
-        return mapResult;
-      }, getMapResult());
+      createEffect(() => fn(value, getIndex, getMapResult));
     })
   );
 }
@@ -175,7 +249,7 @@ function createMapArrayResultEffect<TValue, TResult>(
  * Deferred.
  * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
  */
-function onMapArrayResultChange<TValue, TResult>(
+function createMapArrayOnResultValueChangeEffect<TValue, TResult>(
   list: Accessor<Array<TValue>>,
   mapFn: (value: TValue, getIndex: Accessor<number>) => TResult,
   fn: (
@@ -209,10 +283,15 @@ function onMapArrayResultChange<TValue, TResult>(
  * Create effect for changed index of {@link MapResult} from {@link mapArray}.
  * @remarks deferred.
  */
-function onMapArrayResultIndexChange<TValue, TResult>(
+function createMapArrayOnResultIndexChangeEffect<TValue, TResult>(
   list: Accessor<Array<TValue>>,
   mapFn: (value: TValue, getIndex: Accessor<number>) => TResult,
-  fn: (value: TValue, index: number, prevIndex: number, result: TResult) => void
+  fn: (
+    value: TValue,
+    index: number,
+    prevIndex: number,
+    getResult: Accessor<TResult>
+  ) => void
 ) {
   createEffect(
     mapArray(list, (value, getIndex) => {
@@ -223,12 +302,7 @@ function onMapArrayResultIndexChange<TValue, TResult>(
         on(
           getIndex,
           (inputIndex, prevInputIndex) => {
-            fn(
-              value,
-              inputIndex,
-              prevInputIndex ?? initialIndex,
-              getMapResult()
-            );
+            fn(value, inputIndex, prevInputIndex ?? initialIndex, getMapResult);
           },
           {
             defer: true,
@@ -239,52 +313,12 @@ function onMapArrayResultIndexChange<TValue, TResult>(
   );
 }
 
-/**
- * Create effect for changed value of {@link MapResult} from {@link mapArray}.
- * @param mapFn get mapped results.
- * @param fn function to run when a result changes.
- * @remarks
- * Deferred.
- * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
- */
-function onMapArrayResultMount<TValue, TResult>(
-  list: Accessor<Array<TValue>>,
-  mapFn: (value: TValue, getIndex: Accessor<number>) => TResult,
-  fn: (value: TValue, getIndex: Accessor<number>, result: TResult) => void
-): void {
-  createEffect(
-    mapArray(list, (value, getIndex) => {
-      const getMapResult = createMemo(() => mapFn(value, getIndex));
-      onMount(() => fn(value, getIndex, getMapResult()));
-    })
-  );
-}
-
-/**
- * Create effect for changed value of {@link MapResult} from {@link mapArray}.
- * @param getMapResult get mapped results.
- * @param fn function to run when a result changes.
- * @remarks
- * Deferred.
- * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
- */
-function onMapArrayResultCleanup<TValue, TResult>(
-  list: Accessor<Array<TValue>>,
-  mapFn: (value: TValue, getIndex: Accessor<number>) => TResult,
-  fn: (value: TValue, getIndex: Accessor<number>, result: TResult) => void
-): void {
-  createEffect(
-    mapArray(list, (value, getIndex) => {
-      const getMapResult = createMemo(() => mapFn(value, getIndex));
-      onCleanup(() => fn(value, getIndex, getMapResult()));
-    })
-  );
-}
-
 export {
-  onMapArrayResultChange,
   onMapArrayResultMount,
   onMapArrayResultCleanup,
-  onMapArrayResultIndexChange,
   createMapArrayResultEffect,
+  createMapArrayOnResultValueChangeEffect,
+  createMapArrayOnResultIndexChangeEffect,
 };
+
+// @region-end
