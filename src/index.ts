@@ -14,13 +14,13 @@ import {
 /**
  * Create effect for mount of index from {@link indexArray}.
  */
-function onIndexedMount<TElement>(
-  getElement: Accessor<Array<TElement>>,
-  fn: (getElement: Accessor<TElement>, index: number) => void
+function onIndexArrayMount<TValue>(
+  getValue: Accessor<Array<TValue>>,
+  fn: (getValue: Accessor<TValue>, index: number) => void
 ) {
   createEffect(
-    indexArray(getElement, (getElement, index) => {
-      onMount(() => fn(getElement, index));
+    indexArray(getValue, (getValue, index) => {
+      onMount(() => fn(getValue, index));
     })
   );
 }
@@ -28,13 +28,13 @@ function onIndexedMount<TElement>(
 /**
  * Create effect for cleanup of inde from {@link indexArray}.
  */
-function onIndexedCleanup<TElement>(
-  getElements: Accessor<Array<TElement>>,
-  fn: (getElement: Accessor<TElement>, index: number) => void
+function onIndexArrayCleanup<TValue>(
+  getValues: Accessor<Array<TValue>>,
+  fn: (getValue: Accessor<TValue>, index: number) => void
 ) {
   createEffect(
-    indexArray(getElements, (getElement, index) => {
-      onCleanup(() => fn(getElement, index));
+    indexArray(getValues, (getValue, index) => {
+      onCleanup(() => fn(getValue, index));
     })
   );
 }
@@ -44,19 +44,19 @@ function onIndexedCleanup<TElement>(
  * @remarks
  * Deferred.
  */
-function onIndexedValueChanged<TElement>(
-  getElements: Accessor<Array<TElement>>,
-  fn: (element: TElement, prevElement: TElement, index: number) => void
+function onIndexArrayValueChange<TValue>(
+  getValues: Accessor<Array<TValue>>,
+  fn: (value: TValue, prevValue: TValue, index: number) => void
 ) {
   createEffect(
-    indexArray(getElements, (getElement, index) => {
-      const initialValue = getElement(); // fixes https://github.com/solidjs/solid/issues/2065
+    indexArray(getValues, (getValue, index) => {
+      const initialValue = getValue(); // fixes https://github.com/solidjs/solid/issues/2065
 
       createEffect(
         on(
-          getElement,
-          (inputElement, prevInputElement) => {
-            fn(inputElement, prevInputElement ?? initialValue, index);
+          getValue,
+          (inputValue, prevInputValue) => {
+            fn(inputValue, prevInputValue ?? initialValue, index);
           },
           {
             defer: true,
@@ -67,58 +67,58 @@ function onIndexedValueChanged<TElement>(
   );
 }
 
-export { onIndexedMount, onIndexedCleanup, onIndexedValueChanged };
+export { onIndexArrayMount, onIndexArrayCleanup, onIndexArrayValueChange };
 
 // @region-end
 
 // @region-begin
 
 /**
- * Create effect for mount of element from {@link mapArray}.
+ * Create effect for mount of value from {@link mapArray}.
  */
-function onMappedMount<TElement>(
-  getElements: Accessor<Array<TElement>>,
-  fn: (element: TElement, getIndex: Accessor<number>) => void
+function onMapArrayMount<TVAlue>(
+  getValues: Accessor<Array<TVAlue>>,
+  fn: (value: TVAlue, getIndex: Accessor<number>) => void
 ) {
   createEffect(
-    mapArray(getElements, (element, getIndex) => {
-      onMount(() => fn(element, getIndex));
+    mapArray(getValues, (value, getIndex) => {
+      onMount(() => fn(value, getIndex));
     })
   );
 }
 
 /**
- * Create effect for cleanup of element from {@link mapArray}.
+ * Create effect for cleanup of value from {@link mapArray}.
  */
-function onMappedCleanup<TElement>(
-  getElements: Accessor<Array<TElement>>,
-  fn: (element: TElement, getIndex: Accessor<number>) => void
+function onMapArrayCleanup<TValue>(
+  getValues: Accessor<Array<TValue>>,
+  fn: (value: TValue, getIndex: Accessor<number>) => void
 ) {
   createEffect(
-    mapArray(getElements, (element, getIndex) => {
-      onCleanup(() => fn(element, getIndex));
+    mapArray(getValues, (value, getIndex) => {
+      onCleanup(() => fn(value, getIndex));
     })
   );
 }
 
 /**
- * Create effect for changed index of element from {@link mapArray}.
+ * Create effect for changed index of value from {@link mapArray}.
  * @remarks
  * Deferred.
  */
-function onMappedIndexChange<T>(
-  getElements: Accessor<Array<T>>,
-  fn: (element: T, index: number, prevIndex: number) => void
+function onMapArrayIndexChange<T>(
+  getValues: Accessor<Array<T>>,
+  fn: (value: T, index: number, prevIndex: number) => void
 ) {
   createEffect(
-    mapArray(getElements, (element, getIndex) => {
+    mapArray(getValues, (value, getIndex) => {
       const initialIndex = getIndex(); // fixes https://github.com/solidjs/solid/issues/2065
 
       createEffect(
         on(
           getIndex,
           (inputIndex, prevInputIndex) => {
-            fn(element, inputIndex, prevInputIndex ?? initialIndex);
+            fn(value, inputIndex, prevInputIndex ?? initialIndex);
           },
           {
             defer: true,
@@ -129,100 +129,72 @@ function onMappedIndexChange<T>(
   );
 }
 
-export { onMappedCleanup, onMappedMount, onMappedIndexChange };
+export { onMapArrayCleanup, onMapArrayMount, onMapArrayIndexChange };
 
 // @region-end
 
-// @region-begin MapResult
-
 /**
- * Result of {@link mapArray}, where the result is reactive.
- */
-type MapResult<TElement, TResult> = [TElement, Accessor<TResult>];
-
-/**
- * Create a memo of {@link MapResult}.
- * @param list used to map.
- * @param mapFn function used to create {@link MapResult}.
- */
-function createMapResults<TElement, TResult>(
-  list: Accessor<Array<TElement>>,
-  mapFn: (element: TElement, getIndex: Accessor<number>) => TResult
-): Accessor<Array<MapResult<TElement, TResult>>> {
-  return mapArray(list, (element, getIndex) => [
-    element,
-    createMemo(() => mapFn(element, getIndex)),
-  ]);
-}
-
-// @region-end
-
-// @region-begin MappedMapResult
-
-/**
- * Create effect for mount of {@link MapResult} from {@link mapArray}.
- * @remarks
- * Useful to create objects in other systems.
- */
-function onMappedMapResultMount<TElement, TResult>(
-  getMapResults: Accessor<Array<MapResult<TElement, TResult>>>,
-  fn: (element: TElement, result: TResult, getIndex: Accessor<number>) => void
-): void {
-  createEffect(
-    mapArray(getMapResults, ([element, getResult], getIndex) =>
-      onMount(() => fn(element, getResult(), getIndex))
-    )
-  );
-}
-
-/**
- * Create effect for cleanup of {@link MapResult} from {@link mapArray}.
- * @remarks
- * Useful to delete objects in other systems.
- */
-function onMappedMapResultCleanup<TElement, TResult>(
-  getMapResults: Accessor<Array<MapResult<TElement, TResult>>>,
-  fn: (element: TElement, result: TResult) => void
-): void {
-  createEffect(
-    mapArray(getMapResults, ([element, getResult]) =>
-      onCleanup(() => fn(element, getResult()))
-    )
-  );
-}
-
-/**
- * Create effect for changed value of {@link MapResult} from {@link mapArray}.
+ * Create effect for changed result of {@link fn} from {@link mapArray}.
  * @see {@link onMappedMapResultMount} for mount effects.
  * @see {@link onMappedMapResultCleanup} for cleanup effects.
- * @param getMapResult get mapped results.
+ * @param mapFn get mapped results.
+ * @param fn function to run when a result changes.
+ * @remarks
+ * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
+ */
+function createMapArrayResultEffect<TValue, TResult>(
+  list: Accessor<Array<TValue>>,
+  mapFn: (value: TValue, getIndex: Accessor<number>) => TResult,
+  fn: (
+    value: TValue,
+    getIndex: Accessor<number>,
+    result: TResult,
+    prevResult: TResult
+  ) => void
+): void {
+  createEffect(
+    mapArray(list, (value, getIndex) => {
+      const getMapResult = createMemo(() => mapFn(value, getIndex));
+
+      createEffect<TResult>((prevMapResult) => {
+        const mapResult = getMapResult();
+
+        fn(value, getIndex, mapResult, prevMapResult);
+
+        return mapResult;
+      }, getMapResult());
+    })
+  );
+}
+
+/**
+ * Create effect for changed result of {@link mapFn} from {@link mapArray}.
+ * @param mapFn get mapped results.
  * @param fn function to run when a result changes.
  * @remarks
  * Deferred.
  * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
  */
-function onMappedMapResultValueChange<TElement, TResult>(
-  getMapResult: Accessor<Array<MapResult<TElement, TResult>>>,
+function onMapArrayResultChange<TValue, TResult>(
+  list: Accessor<Array<TValue>>,
+  mapFn: (value: TValue, getIndex: Accessor<number>) => TResult,
   fn: (
-    element: TElement,
+    value: TValue,
     getIndex: Accessor<number>,
     result: TResult,
     prevResult: TResult
-  ) => TResult
+  ) => void
 ): void {
   createEffect(
-    mapArray(getMapResult, ([element, getResult], getIndex) => {
-      const initialResult = getResult(); // fixes https://github.com/solidjs/solid/issues/2065
+    mapArray(list, (value, getIndex) => {
+      const getMapResult = createMemo(() => mapFn(value, getIndex));
+
+      const initialResult = getMapResult(); // fixes https://github.com/solidjs/solid/issues/2065
       createEffect(
         on(
-          getResult,
+          getMapResult,
           (inputResult, prevInputResult) => {
-            fn(
-              element,
-              getIndex,
-              inputResult,
-              prevInputResult ?? initialResult
-            );
+            fn(value, getIndex, inputResult, prevInputResult ?? initialResult);
           },
           {
             defer: true,
@@ -237,23 +209,26 @@ function onMappedMapResultValueChange<TElement, TResult>(
  * Create effect for changed index of {@link MapResult} from {@link mapArray}.
  * @remarks deferred.
  */
-function onMappedMapResultIndexChange<TElement, TResult>(
-  getMapResults: Accessor<Array<MapResult<TElement, TResult>>>,
-  fn: (
-    element: TElement,
-    getResult: Accessor<TResult>,
-    index: number,
-    prevIndex: number
-  ) => void
+function onMapArrayResultIndexChange<TValue, TResult>(
+  list: Accessor<Array<TValue>>,
+  mapFn: (value: TValue, getIndex: Accessor<number>) => TResult,
+  fn: (value: TValue, index: number, prevIndex: number, result: TResult) => void
 ) {
   createEffect(
-    mapArray(getMapResults, ([element, getResult], getIndex) => {
+    mapArray(list, (value, getIndex) => {
+      const getMapResult = createMemo(() => mapFn(value, getIndex));
+
       const initialIndex = getIndex(); // fixes https://github.com/solidjs/solid/issues/2065
       createEffect(
         on(
           getIndex,
           (inputIndex, prevInputIndex) => {
-            fn(element, getResult, inputIndex, prevInputIndex ?? initialIndex);
+            fn(
+              value,
+              inputIndex,
+              prevInputIndex ?? initialIndex,
+              getMapResult()
+            );
           },
           {
             defer: true,
@@ -264,10 +239,52 @@ function onMappedMapResultIndexChange<TElement, TResult>(
   );
 }
 
+/**
+ * Create effect for changed value of {@link MapResult} from {@link mapArray}.
+ * @param mapFn get mapped results.
+ * @param fn function to run when a result changes.
+ * @remarks
+ * Deferred.
+ * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
+ */
+function onMapArrayResultMount<TValue, TResult>(
+  list: Accessor<Array<TValue>>,
+  mapFn: (value: TValue, getIndex: Accessor<number>) => TResult,
+  fn: (value: TValue, getIndex: Accessor<number>, result: TResult) => void
+): void {
+  createEffect(
+    mapArray(list, (value, getIndex) => {
+      const getMapResult = createMemo(() => mapFn(value, getIndex));
+      onMount(() => fn(value, getIndex, getMapResult()));
+    })
+  );
+}
+
+/**
+ * Create effect for changed value of {@link MapResult} from {@link mapArray}.
+ * @param getMapResult get mapped results.
+ * @param fn function to run when a result changes.
+ * @remarks
+ * Deferred.
+ * Useful to update objects in other system. eg, writing transform position to a graphics or physics engine.
+ */
+function onMapArrayResultCleanup<TValue, TResult>(
+  list: Accessor<Array<TValue>>,
+  mapFn: (value: TValue, getIndex: Accessor<number>) => TResult,
+  fn: (value: TValue, getIndex: Accessor<number>, result: TResult) => void
+): void {
+  createEffect(
+    mapArray(list, (value, getIndex) => {
+      const getMapResult = createMemo(() => mapFn(value, getIndex));
+      onCleanup(() => fn(value, getIndex, getMapResult()));
+    })
+  );
+}
+
 export {
-  createMapResults,
-  onMappedMapResultValueChange,
-  onMappedMapResultMount,
-  onMappedMapResultCleanup,
-  onMappedMapResultIndexChange,
+  onMapArrayResultChange,
+  onMapArrayResultMount,
+  onMapArrayResultCleanup,
+  onMapArrayResultIndexChange,
+  createMapArrayResultEffect,
 };

@@ -1,18 +1,18 @@
-import { type Accessor, createMemo, createRoot } from "solid-js";
+import { type Accessor, createMemo, createRoot, on } from "solid-js";
 import { createStore, produce } from "solid-js/store";
 //
 import {
-  createMapResults,
-  onMappedMount,
-  onMappedCleanup,
-  onMappedIndexChange,
-  onIndexedValueChanged,
-  onIndexedCleanup,
-  onIndexedMount,
-  onMappedMapResultValueChange,
-  onMappedMapResultMount,
-  onMappedMapResultCleanup,
-  onMappedMapResultIndexChange,
+  onMapArrayMount,
+  onMapArrayCleanup,
+  onMapArrayIndexChange,
+  onIndexArrayValueChange,
+  onIndexArrayCleanup,
+  onIndexArrayMount,
+  createMapArrayResultEffect,
+  onMapArrayResultChange,
+  onMapArrayResultMount,
+  onMapArrayResultCleanup,
+  onMapArrayResultIndexChange,
 } from "../src/index.ts";
 
 // @region-begin base
@@ -74,90 +74,120 @@ const root = createRoot(() => {
     () => worldState.borbEntityCollectionState.ids
   );
 
-  onMappedMount(getAllBorbEntityIds, (element, getIndex) => {
+  onMapArrayMount(getAllBorbEntityIds, (element, getIndex) => {
     console.log(
-      onMappedMount.name,
+      onMapArrayMount.name,
       `${element} created at index ${getIndex()}`
     );
   });
 
-  onMappedCleanup(getAllBorbEntityIds, (element, getIndex) => {
+  onMapArrayCleanup(getAllBorbEntityIds, (element, getIndex) => {
     console.log(
-      onMappedCleanup.name,
+      onMapArrayCleanup.name,
       `${String(element)} disposed at index ${getIndex()}`
     );
   });
 
-  onMappedIndexChange(getAllBorbEntityIds, (element, index, prevIndex) => {
+  onMapArrayIndexChange(getAllBorbEntityIds, (element, index, prevIndex) => {
     console.log(
-      onMappedIndexChange.name,
+      onMapArrayIndexChange.name,
       `${String(element)} changed index from ${prevIndex} to ${index}`
     );
   });
 
-  onIndexedMount(getAllBorbEntityIds, (getElement, index) => {
+  createMapArrayResultEffect(
+    getAllBorbEntityIds,
+    (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
+    (entityId, getIndex, color, prevColor) => {
+      console.log(
+        createMapArrayResultEffect.name,
+        `${entityId} color changed from ${prevColor} to ${color}`
+      );
+
+      return color;
+    }
+  );
+
+  onIndexArrayMount(getAllBorbEntityIds, (getElement, index) => {
     console.log(
-      onIndexedMount.name,
+      onIndexArrayMount.name,
       `${index} created with value ${getElement()}`
     );
   });
 
-  onIndexedCleanup(getAllBorbEntityIds, (getElement, index) => {
+  onIndexArrayCleanup(getAllBorbEntityIds, (getElement, index) => {
     console.log(
-      onIndexedCleanup.name,
+      onIndexArrayCleanup.name,
       `index ${index} with value ${getElement()}`
     );
   });
 
-  onIndexedValueChanged(getAllBorbEntityIds, (element, prevElement, index) => {
-    console.log(
-      onIndexedValueChanged.name,
-      `${index} changed value from ${prevElement} to ${element}`
-    );
-  });
-
-  // @region-end
-
-  const getMappedEntityColor = createMapResults(
+  onIndexArrayValueChange(
     getAllBorbEntityIds,
-    (entityId) => worldState.borbEntityCollectionState.states[entityId].color
-  );
-
-  onMappedMapResultMount(getMappedEntityColor, (entityId, result) => {
-    console.log(
-      onMappedMapResultMount.name,
-      `${entityId} created with color ${result}`
-    );
-  });
-
-  onMappedMapResultCleanup(getMappedEntityColor, (entityId, result) => {
-    console.log(
-      onMappedMapResultCleanup.name,
-      `${entityId} disposed with color ${result}`
-    );
-  });
-
-  onMappedMapResultValueChange(
-    getMappedEntityColor,
-    (entityId, _getIndex, result, prevResult) => {
+    (element, prevElement, index) => {
       console.log(
-        onMappedMapResultValueChange.name,
-        `${entityId} color changed from ${prevResult} to ${result}`
+        onIndexArrayValueChange.name,
+        `${index} changed value from ${prevElement} to ${element}`
       );
-
-      return result;
     }
   );
 
-  onMappedMapResultIndexChange(
-    getMappedEntityColor,
-    (entityId, getResult, index, prevIndex) => {
+  // @region-end
+
+  onMapArrayResultMount(
+    getAllBorbEntityIds,
+    (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
+    (entityId, getIndex, color) => {
       console.log(
-        onMappedMapResultIndexChange.name,
-        `${entityId} index changed from ${prevIndex} to ${index} with color ${getResult()}`
+        onMapArrayResultMount.name,
+        `${entityId} created at index ${getIndex()} with color ${color}`
+      );
+    }
+  );
+
+  onMapArrayResultCleanup(
+    getAllBorbEntityIds,
+    (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
+    (entityId, getIndex, color) => {
+      console.log(
+        onMapArrayResultCleanup.name,
+        `${entityId} disposed at index ${getIndex()} with color ${color}`
+      );
+    }
+  );
+
+  onMapArrayResultChange(
+    getAllBorbEntityIds,
+    (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
+    (entityId, _getIndex, color, prevColor) => {
+      console.log(
+        onMapArrayResultChange.name,
+        `${entityId} color changed from ${prevColor} to ${color}`
+      );
+    }
+  );
+
+  onMapArrayResultIndexChange(
+    getAllBorbEntityIds,
+    (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
+    (entityId, index, prevIndex, color) => {
+      console.log(
+        onMapArrayResultIndexChange.name,
+        `${entityId} index changed from ${prevIndex} to ${index} with color ${color}`
       );
 
-      return index;
+      return color;
+    }
+  );
+
+  createMapArrayResultEffect(
+    getAllBorbEntityIds,
+    (entityId) => worldState.borbEntityCollectionState.states[entityId].color,
+    (entityId, _getIndex, color, prevColor) => {
+      console.log(
+        createMapArrayResultEffect.name,
+        `${entityId} color changed from ${prevColor} to ${color}`
+      );
     }
   );
 

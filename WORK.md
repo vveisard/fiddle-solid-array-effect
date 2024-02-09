@@ -1,3 +1,7 @@
+STORY createMapArrayEffect
+STORY createMapArrayResultEffect
+idk what this looks like
+
 EPIC standalone package @vveisard/solid-array-primitives
 
 STORY as a user, I want GitHub versioned releases, so that I can install packages as tarballs
